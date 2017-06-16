@@ -6,30 +6,26 @@
  *
  * @author: nrekow
  *
- * Usage:
- *
- *		// Create the object
- * 		$captcha = new SpamProtect\Complex\Captcha($length);
- *
- *		// Set options
- *		$captcha->setSize(12);
- *		$captcha->useRandomColors = false;
- *
- * 		// Create the captcha
- *		$captcha->createCaptcha();
- *
- * 		// Numeric representation of captcha
- * 		echo $captcha->getNumbers();
- *
- * 		// Image representation of captcha
- * 		echo $captcha->getImage();
- *
- *
  */
 
-namespace SpamProtect\Complex;
+namespace SpamProtect\Captcha;
 
-class Captcha {
+interface CaptchaInterface {
+	public function createCaptcha();
+	public function getImage();
+	public function getNumbers();
+	public function getAngle();
+	public function getPadding();
+	public function getSize();
+	public function setForegroundColor($r, $g, $b);
+	public function setBackgroundColor($r, $g, $b);
+	public function setAngle($angle);
+	public function setFont($font);
+	public function setPadding($padding);
+	public function setSize($size);
+}
+
+class Complex implements CaptchaInterface {
 	public $useTransparency = true;
 	public $useRandomColors = true;
 	public $useRandomRotation = true;

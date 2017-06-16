@@ -5,9 +5,11 @@
  * @author nrekow
  * 
  */
-require_once 'classes/spamprotect/captcha/complex/captcha.php';
+require_once 'classes/spamprotect/captcha/complex.php';
 
-$captcha = new SpamProtect\Complex\Captcha(rand(5, 10));
+use SpamProtect\Captcha\Complex;
+
+$captcha = new Complex(rand(5, 10));
 $captcha->setSize(24);
 $captcha->useRandomColors = false;
 $captcha->useRandomRotation = false;
