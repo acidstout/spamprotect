@@ -38,10 +38,10 @@ interface CaptchaInterface {
 	public function getBlotsModifier();
 	public function getLinesModifier();
 	public function getNoiseModifier();
-	public function setArcsModifier();
-	public function setBlotsModifier();
-	public function setLinesModifier();
-	public function setNoiseModifier();
+	public function setArcsModifier($arcs);
+	public function setBlotsModifier($blots);
+	public function setLinesModifier($lines);
+	public function setNoiseModifier($noise);
 }
 
 class Complex implements CaptchaInterface {
@@ -197,6 +197,10 @@ class Complex implements CaptchaInterface {
 		$this->_arcsModifier = abs($arcs);
 	}
 	
+	public function setBlotsModifier($blots) {
+		$this->__blotsModifier= abs($blots);
+	}
+	
 	public function setLinesModifier($lines) {
 		$this->_linesModifier = abs($lines);
 	}
@@ -205,10 +209,6 @@ class Complex implements CaptchaInterface {
 		$this->_noiseModifier = abs($noise);
 	}
 	
-	public function setBlotsModifier($blots) {
-		$this->__blotsModifier= abs($blots);
-	}
-
 	
 	/////////////////////////
 	// Private functions
