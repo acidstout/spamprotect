@@ -4,23 +4,13 @@
  * 
  * Generates a numeric captcha image out of existing single number images.
  * 
- * Usage:
- * 
- * 		$captcha = new SpamProtect\Simple\Captcha($length);
- * 		
- * 		// Numeric representation of captcha
- * 		echo $captcha->numbers
- * 
- * 		// Image representation of captcha
- * 		echo $captcha->numbers
- * 
  * @author: nrekow
  * 
  */
 
-namespace SpamProtect\Simple;
+namespace SpamProtect\Captcha;
 
-class Captcha {
+class Simple {
 	public $numbers = '';
 	public $image = '';
 	
