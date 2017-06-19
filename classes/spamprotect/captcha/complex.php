@@ -2,7 +2,7 @@
 /**
  * Captcha class
  *
- * Generates a graphical captcha out of random numbers.
+ * Generates a graphical captcha out of random numbers and adds some noise.
  *
  * @author: nrekow
  *
@@ -29,6 +29,8 @@ class Complex implements CaptchaInterface {
 	public $useTransparency = true;
 	public $useRandomColors = true;
 	public $useRandomRotation = true;
+	public $addNoise = true;
+	public $useRandomColorNoise = false;
 	
 	private $_numbers = null;
 	private $_image = null;
@@ -40,6 +42,7 @@ class Complex implements CaptchaInterface {
 	private $_padding = 2;
 	private $_fg_color = array('R' => 0, 'G' => 0, 'B' => 0);
 	private $_bg_color = array('R' => 255, 'G' => 255, 'B' => 255);
+	private $_noiseModifier = 75;
 	
 	/**
 	 * Constructor
@@ -94,6 +97,10 @@ class Complex implements CaptchaInterface {
 		return $this->_size;
 	}
 	
+	public function getNoiseModifier() {
+		return $this->_noiseModifier;
+	} 
+	
 	
 	
 	/////////////////////////
@@ -147,6 +154,9 @@ class Complex implements CaptchaInterface {
 		$this->_size = abs($size);
 	}
 	
+	public function setNoiseModifier($noise) {
+		$this->_noiseModifier = abs($noise);
+	}
 	
 	/////////////////////////
 	// Private functions
@@ -196,6 +206,58 @@ class Complex implements CaptchaInterface {
 		// Enable alpha-blending and save that information
 		imagealphablending($this->_resource, true);
 		imagesavealpha($this->_resource, true);
+	}
+	
+
+	/**
+	 * Sets random color and returns color identifier
+	 * 
+	 * @param array $colorIdentifier
+	 * @return integer
+	 */
+	private function _setRandomColor($colorIdentifier) {
+		$colorIdentifier['R'] = rand(0, 255);
+		$colorIdentifier['G'] = rand(0, 255);
+		$colorIdentifier['B'] = rand(0, 255);
+		
+		// Set generated color code
+		return imagecolorallocate($this->_resource, $colorIdentifier['R'], $colorIdentifier['G'], $colorIdentifier['B']);
+	}
+	
+
+	/**
+	 * Adds random noise to the image
+	 */
+	private function _addNoise() {
+		// Set colors. Use default as defined above.
+		$background = imagecolorallocate($this->_resource, $this->_bg_color['R'], $this->_bg_color['G'], $this->_bg_color['B']);
+		$foreground = imagecolorallocate($this->_resource, $this->_fg_color['R'], $this->_fg_color['G'], $this->_fg_color['B']);
+		
+		// The higher the noise modifier, the more noise is added to the image.
+		for ($i = 0; $i < $this->_noiseModifier; $i++) {
+			// Set random foreground color.
+			if ($this->useRandomColorNoise) {
+				$foreground = $this->_setRandomColor($this->_fg_color);
+			}
+			
+			// Add filled rectangle at a random position.
+			imagefilledrectangle($this->_resource, rand(0, 5) + $i, rand(0, 5) + $i, rand(0, 5) + $i, rand(0, 5) + $i, (rand(0, 1) ? $foreground: $background));
+			
+			// Set random line thickness.
+			imagesetthickness($this->_resource, rand(1, 5));
+			
+			// Draw random arcs.
+			imagearc(
+					$this->_resource,
+					rand(1, 300), // x-coordinate of the center.
+					rand(1, 300), // y-coordinate of the center.
+					rand(1, 300), // The arc width.
+					rand(1, 300), // The arc height.
+					rand(1, 300), // The arc start angle, in degrees.
+					rand(1, 300), // The arc end angle, in degrees.
+					(rand(0, 1) ? $foreground: $background) // A color identifier.
+			);
+		}
 	}
 	
 	
@@ -304,7 +366,7 @@ class Complex implements CaptchaInterface {
 				// Default to 0 if no rotation is used.
 				$rotate = 0;
 				// Simple generate a single color image represantation of the text.
-				imagettftext($this->_resource, $this->_size, $this->_angle, $offset_x + $this->_padding, $offset_y + $this->_padding, $foreground, $this->_font, $text);
+				imagettftext($this->_resource, $this->_size, $rotate, $offset_x + $this->_padding, $offset_y + $this->_padding, $foreground, $this->_font, $text);
 			}
 		}	
 		
@@ -320,6 +382,11 @@ class Complex implements CaptchaInterface {
 			}
 		}
 
+		// Add some noise to the image if desired.
+		if ($this->addNoise) {
+			$this->_addNoise();
+		}
+		
 		// Write image to output buffer ...
 		imagepng($this->_resource);
 		// ... and destroy the image resource afterwards.
