@@ -7,28 +7,41 @@
  * @author: nrekow
  *
  *
- * TODO: Add arcs, lines and noise relative to image size. 
  *
  */
 
 namespace SpamProtect\Captcha;
 
 interface CaptchaInterface {
+	// Create captcha as HTML ...
 	public function createCaptcha();
+	
+	// ... and fetch generated image
 	public function getImage();
+	
+	// Get configuration
 	public function getNumbers();
 	public function getAngle();
 	public function getPadding();
 	public function getSize();
-	public function setForegroundColor($r, $g, $b);
-	public function setBackgroundColor($r, $g, $b);
+	
+	// Set configuration
+	public function setForegroundColor($red, $green, $blue);
+	public function setBackgroundColor($red, $green, $blue);
 	public function setAngle($angle);
 	public function setFont($font);
 	public function setPadding($padding);
 	public function setSize($size);
+	
+	// Modifiers (Getter / Setter)
 	public function getArcsModifier();
+	public function getBlotsModifier();
 	public function getLinesModifier();
 	public function getNoiseModifier();
+	public function setArcsModifier();
+	public function setBlotsModifier();
+	public function setLinesModifier();
+	public function setNoiseModifier();
 }
 
 class Complex implements CaptchaInterface {
@@ -36,9 +49,11 @@ class Complex implements CaptchaInterface {
 	public $useRandomColors = true;
 	public $useRandomRotation = true;
 	public $addArcs = true;
+	public $addBlots = true;
 	public $addLines = true;
 	public $addNoise = true;
 	public $useRandomColorArcs = true;
+	public $useRandomColorBlots = true;
 	public $useRandomColorLines = true;
 	public $useRandomColorNoise = true;
 	
@@ -55,6 +70,7 @@ class Complex implements CaptchaInterface {
 	private $_arcsModifier = 50;
 	private $_linesModifier = 5;
 	private $_noiseModifier = 1000;
+	private $_blotsModifier = 120;
 	
 	/**
 	 * Constructor
@@ -119,28 +135,31 @@ class Complex implements CaptchaInterface {
 	
 	public function getNoiseModifier() {
 		return $this->_noiseModifier;
-	} 
+	}
 	
+	public function getBlotsModifier() {
+		return $this->_blotsModifier;
+	}
 	
 	
 	/////////////////////////
 	// Setter methods
 	
-	public function setForegroundColor($r, $g, $b) {
-		$r = $this->_checkRange($r, 0, 255);
-		$b = $this->_checkRange($b, 0, 255);
-		$g = $this->_checkRange($g, 0, 255);
-		
-		$this->_fg_color = array('R' => $r, 'G' => $g, 'B' => $b);
+	public function setForegroundColor($red, $green, $blue) {
+		$this->_fg_color = array(
+			'R' => $this->_checkRange($red, 0, 255),
+			'G' => $this->_checkRange($green, 0, 255),
+			'B' => $this->_checkRange($blue, 0, 255)
+		);
 	}
 	
 	
-	public function setBackgroundColor($r, $g, $b) {
-		$r = $this->_checkRange($r, 0, 255);
-		$b = $this->_checkRange($b, 0, 255);
-		$g = $this->_checkRange($g, 0, 255);
-		
-		$this->_bg_color = array('R' => $r, 'G' => $g, 'B' => $b);
+	public function setBackgroundColor($red, $green, $blue) {
+		$this->_bg_color = array(
+			'R' => $this->_checkRange($red, 0, 255),
+			'G' => $this->_checkRange($green, 0, 255),
+			'B' => $this->_checkRange($blue, 0, 255)
+		);
 	}
 	
 	
@@ -186,6 +205,11 @@ class Complex implements CaptchaInterface {
 		$this->_noiseModifier = abs($noise);
 	}
 	
+	public function setBlotsModifier($blots) {
+		$this->__blotsModifier= abs($blots);
+	}
+
+	
 	/////////////////////////
 	// Private functions
 	
@@ -208,17 +232,8 @@ class Complex implements CaptchaInterface {
 	 * @return number
 	 */
 	private function _getRandomAngle() {
-		$rotate1 = rand(0, 60);
-		$rotate2 = rand(300, 360);
-		
 		// Choose which random angle to use.
-		if (rand(0, 1)) {
-			$rotate = $rotate1;
-		} else {
-			$rotate = $rotate2;
-		}
-		
-		return $rotate;
+		return (rand(0, 1)) ? rand(0, 60) : rand(300, 360);
 	}
 	
 
@@ -260,32 +275,57 @@ class Complex implements CaptchaInterface {
 		$background = imagecolorallocate($this->_resource, $this->_bg_color['R'], $this->_bg_color['G'], $this->_bg_color['B']);
 		$foreground = imagecolorallocate($this->_resource, $this->_fg_color['R'], $this->_fg_color['G'], $this->_fg_color['B']);
 		
-		// The higher the noise modifier, the more noise is added to the image.
+		// Get dimension of image
+		$width = imagesx($this->_resource);
+		$height = imagesy($this->_resource);
+		
+		// The higher the modifier, the more arcs are added to the image.
 		for ($i = 0; $i < abs($this->_arcsModifier); $i++) {
 			// Set random foreground color.
-			if ($this->useRandomColorArcs) {
-				$foreground = $this->_setRandomColor();
-			}
-			
-			// Add filled rectangle at a random position.
-			imagefilledrectangle($this->_resource, rand(0, 5) + $i, rand(0, 5) + $i, rand(0, 5) + $i, rand(0, 5) + $i, (rand(0, 1) ? $foreground: $background));
-			
+			($this->useRandomColorArcs) ? $foreground = $this->_setRandomColor() : null;
+
 			// Set random line thickness.
-			imagesetthickness($this->_resource, rand(1, 5));
+			imagesetthickness($this->_resource, rand(1, 4));
 			
 			// Draw random arcs.
 			imagearc(
 					$this->_resource,
-					rand(1, 300), // x-coordinate of the center.
-					rand(1, 300), // y-coordinate of the center.
+					rand(1, $width), // x-coordinate of the center.
+					rand(1, $height), // y-coordinate of the center.
 					rand(1, 300), // The arc width.
 					rand(1, 300), // The arc height.
 					rand(1, 300), // The arc start angle, in degrees.
 					rand(1, 300), // The arc end angle, in degrees.
-					(rand(0, 1) ? $foreground: $background) // A color identifier.
+					(rand(0, 1) ? $foreground : $background) // Select color.
 			);
 		}
 	}
+
+	
+	/**
+	 * Add some random blots to the image
+	 */
+	private function _addBlots() {
+		$background = imagecolorallocate($this->_resource, $this->_bg_color['R'], $this->_bg_color['G'], $this->_bg_color['B']);
+		$foreground = imagecolorallocate($this->_resource, $this->_fg_color['R'], $this->_fg_color['G'], $this->_fg_color['B']);
+
+		// Get dimension of image
+		$width = imagesx($this->_resource);
+		$height = imagesy($this->_resource);
+		
+		// Add filled rectangle at a random position.
+		for ($i = 0; $i < abs($this->_blotsModifier); $i++) {
+			$x1 = rand(0, $width);
+			$y1 = rand(0, $height);
+			$x2 = $x1 + rand(1, 5);
+			$y2 = $y1 + rand(1, 5);
+
+			($this->useRandomColorBlots) ? $foreground = $this->_setRandomColor() : null;
+		
+			imagefilledrectangle($this->_resource, $x1, $y1, $x2, $y2, (rand(0, 1) ? $foreground: $background));
+		}
+	}
+	
 	
 	/**
 	 * Add random lines to an image
@@ -299,14 +339,17 @@ class Complex implements CaptchaInterface {
 		// Reset foreground color to default. 
 		$foreground = imagecolorallocate($this->_resource, $this->_fg_color['R'], $this->_fg_color['G'], $this->_fg_color['B']);
 		
-		// Add some randomly colored lines.
+		// Get dimension of image
+		$width = imagesx($this->_resource);
+		$height = imagesy($this->_resource);
+		
 		for ($i = 0; $i < abs($this->_linesModifier); $i++) {
 			// Set random foreground color if desired.
-			if ($this->useRandomColorLines) {
-				$foreground = $this->_setRandomColor();
-			}
+			($this->useRandomColorLines) ? $foreground = $this->_setRandomColor() : null;
 			
-			imageline($this->_resource, 0, rand() % 50, 200, rand() % 50, $foreground);
+			// Add some randomly colored lines.
+			imageline($this->_resource, 0, rand(0, $height), $width, rand(0, $height), $foreground); // horizontal
+			imageline($this->_resource, rand(0, $width), 0, rand(0, $width), $height, $foreground); // vertical
 		}
 	}
 	
@@ -318,12 +361,17 @@ class Complex implements CaptchaInterface {
 		// Reset foreground color to default.
 		$foreground = imagecolorallocate($this->_resource, $this->_fg_color['R'], $this->_fg_color['G'], $this->_fg_color['B']);
 		
+		// Get dimension of image
+		$width = imagesx($this->_resource);
+		$height = imagesy($this->_resource);
+		
 		for ($i = 0; $i < abs($this->_noiseModifier); $i++) {
 			// Set random foreground color if desired.
-			if ($this->useRandomColorNoise) {
-				$foreground = $this->_setRandomColor();
-			}
-			imagesetpixel($this->_resource, rand() % 200, rand() % 50, $foreground);
+			($this->useRandomColorNoise) ? $foreground = $this->_setRandomColor() : null;
+			
+			// Add some random pixels
+			//imagesetpixel($this->_resource, rand() % 200, rand() % 50, $foreground);
+			imagesetpixel($this->_resource, rand(0, $width), rand(0, $height), $foreground);
 		}
 	}
 	
@@ -368,9 +416,7 @@ class Complex implements CaptchaInterface {
 		
 		
 		// Adjust padding if random rotation is used.
-		if ($this->useRandomRotation) {
-			$this->_padding = $this->_size* 1.1;
-		}
+		($this->useRandomRotation) ? $this->_padding = $this->_size * 1.1 : null;
 		
 		// Create image resource.
 		$this->_resource = imagecreate($width + ($this->_padding* 2) + 1 + $width_modifier, $height + ($this->_padding) + 1 - $height_modifier);
@@ -384,11 +430,23 @@ class Complex implements CaptchaInterface {
 		// Enable interlacing
 		imageinterlace($this->_resource, true);
 
+		// Add some blots.
+		($this->addBlots) ? $this->_addBlots() : null;
 		
+		// Add some arcs.
+		($this->addArcs) ? $this->_addArcs() : null;
+		
+		// Add some lines.
+		($this->addLines) ? $this->_addLines() : null;
+		
+		// Add some noise.
+		($this->addNoise) ? $this->_addNoise() : null;
+		
+
+		// Default rotation angle to 0 (e.g. assume no rotation).
+		$rotate = 0;
 		foreach (str_split($text) as $ch) {
-			if ($this->useRandomColors) {
-				$foreground = $this->_setRandomColor();
-			}
+			($this->useRandomColors) ? $foreground = $this->_setRandomColor() : null;
 			
 			if ($this->useRandomRotation) {
 				// Get random rotation angle for each char.
@@ -396,43 +454,22 @@ class Complex implements CaptchaInterface {
 				
 				// Adjust vertical offset when rotating in relation to angle.
 				$offset_y = abs($rotate / ($rotate - 100));
-			} else {
-				// Default to 0 if no rotation is used.
-				$rotate = 0;
 			}
 			
 			// Add char to image
 			imagettftext($this->_resource, $this->_size, $rotate, $offset_x + $this->_padding, $offset_y + $this->_padding, $foreground, $this->_font, $ch);
 			
 			// Increase horizontal offset, so the next char won't overwrite the previous one.
-			$offset_x += round($this->_size- ($this->_size/ $modifier));
+			$offset_x += round($this->_size - ($this->_size/ $modifier));
 		}
 		
 		// Init PHP's output buffer ...
 		ob_start();
 		
-		// Add some random arcs
-		if ($this->addArcs) {
-			$this->_addArcs();
-		}
-
-		// Add some random lines
-		if ($this->addLines) {
-			$this->_addLines();
-		}
-
-		// Add some noise to the image if desired.
-		if ($this->addNoise) {
-			$this->_addNoise();
-		}
-
 		// ... and finally rotate the generated image
 		if ($this->_angle != 0) {
 			$this->_resource= imagerotate($this->_resource, $this->_angle, $background);
-			
-			if ($this->useTransparency) {
-				$this->_setTransparency($background);
-			}
+			($this->useTransparency) ? $this->_setTransparency($background) : null;
 		}
 		
 		// Write image to output buffer ...
