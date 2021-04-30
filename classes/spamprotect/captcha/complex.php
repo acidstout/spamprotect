@@ -5,8 +5,7 @@
  * Generates a graphical captcha out of random numbers and adds some noise.
  *
  * @author: nrekow
- *
- *
+ * @version 1.1
  *
  */
 
@@ -81,6 +80,9 @@ class Complex implements CaptchaInterface {
 	 * 
 	 */
 	public function __construct($length) {
+		if (!extension_loaded('gd') || !function_exists('ImageTTFBBox')) {
+			die('This class required PHP GD extension to be loaded.');
+		}
 		$this->_length = $length;
 		
 		for ($i = 0; $i < $this->_length; $i++) {
